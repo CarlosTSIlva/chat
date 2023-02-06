@@ -39,6 +39,9 @@ class LoginState extends State<Login> {
                   .where('id', isEqualTo: user.uid)
                   .get();
               final List<DocumentSnapshot> documents = result.docs;
+
+              final preferences = await SharedPreferences.getInstance();
+
               if (documents.isEmpty) {
                 FirebaseFirestore.instance
                     .collection('users')
@@ -46,16 +49,35 @@ class LoginState extends State<Login> {
                     .set({
                   'nickname': user.displayName,
                   'photoUrl': user.photoURL,
-                  'id': user.uid
+                  'id': user.uid,
+                  "aboutMe": 'not like yet',
                 });
+                await preferences.setString('nickname', user.displayName ?? '');
+                await preferences.setString('photoUrl', user.photoURL ?? '');
+                await preferences.setString(
+                  'id',
+                  user.uid,
+                );
+                await preferences.setString(
+                  'aboutMe',
+                  'not like yet',
+                );
+              } else {
+                final name = documents[0]['nickname'];
+                final photoUrl = documents[0]['photoUrl'];
+                final id = documents[0]['id'];
+                final aboutMe = documents[0]['aboutMe'] ?? "";
+                await preferences.setString('nickname', name ?? '');
+                await preferences.setString('photoUrl', photoUrl ?? '');
+                await preferences.setString(
+                  'id',
+                  id,
+                );
+                await preferences.setString(
+                  'aboutMe',
+                  aboutMe,
+                );
               }
-              final preferences = await SharedPreferences.getInstance();
-              await preferences.setString('nickname', user.displayName ?? '');
-              await preferences.setString('photoUrl', user.photoURL ?? '');
-              await preferences.setString(
-                'id',
-                user.uid,
-              );
 
               if (context.mounted && firebaseUser.user != null) {
                 Navigator.pushReplacementNamed(context, AppRoutes.dashboard);

@@ -46,13 +46,21 @@ class Dashboard extends StatelessWidget {
                 itemBuilder: (context, index) => Column(
                   children: [
                     Card(
-                      child: ListTile(
-                        leading: Image(
-                            image: NetworkImage(
-                                snapshot.data?.docs[index].get('photoUrl'))),
-                        title: Text(snapshot.data?.docs[index].get('nickname')),
-                        subtitle:
-                            Text(snapshot.data?.docs[index].get('aboutMe')),
+                      child: InkWell(
+                        onTap: () {
+                          final id = snapshot.data?.docs[index].get('id');
+
+                          print(id);
+                        },
+                        child: ListTile(
+                          leading: Image(
+                              image: NetworkImage(
+                                  snapshot.data?.docs[index].get('photoUrl'))),
+                          title:
+                              Text(snapshot.data?.docs[index].get('nickname')),
+                          subtitle:
+                              Text(snapshot.data?.docs[index].get('aboutMe')),
+                        ),
                       ),
                     ),
                   ],
