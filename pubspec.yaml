@@ -19,6 +19,7 @@ dependencies:
   firebase_storage: ^11.0.10
   firebase_core: ^2.4.1
   firebase_database: ^10.0.9
+  shared_preferences: ^2.0.17
 
 dev_dependencies:
   flutter_test:

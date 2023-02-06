@@ -16,9 +16,7 @@ class Dashboard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // FirebaseAuth.instance.signOut();
-              // GoogleSignIn().signOut();
-              // Navigator.pushReplacementNamed(context, AppRoutes.login);
+              Navigator.pushNamed(context, AppRoutes.settings);
             },
           ),
           IconButton(
@@ -53,7 +51,8 @@ class Dashboard extends StatelessWidget {
                             image: NetworkImage(
                                 snapshot.data?.docs[index].get('photoUrl'))),
                         title: Text(snapshot.data?.docs[index].get('nickname')),
-                        subtitle: const Text('my like to'),
+                        subtitle:
+                            Text(snapshot.data?.docs[index].get('aboutMe')),
                       ),
                     ),
                   ],

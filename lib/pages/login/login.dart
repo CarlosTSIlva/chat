@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -32,21 +33,29 @@ class LoginState extends State<Login> {
               );
               final firebaseUser =
                   await FirebaseAuth.instance.signInWithCredential(credential);
+              final user = firebaseUser.user!;
               final QuerySnapshot result = await FirebaseFirestore.instance
                   .collection('users')
-                  .where('id', isEqualTo: firebaseUser.user?.uid)
+                  .where('id', isEqualTo: user.uid)
                   .get();
               final List<DocumentSnapshot> documents = result.docs;
               if (documents.isEmpty) {
                 FirebaseFirestore.instance
                     .collection('users')
-                    .doc(firebaseUser.user?.uid)
+                    .doc(user.uid)
                     .set({
-                  'nickname': firebaseUser.user?.displayName,
-                  'photoUrl': firebaseUser.user?.photoURL,
-                  'id': firebaseUser.user?.uid
+                  'nickname': user.displayName,
+                  'photoUrl': user.photoURL,
+                  'id': user.uid
                 });
               }
+              final preferences = await SharedPreferences.getInstance();
+              await preferences.setString('nickname', user.displayName ?? '');
+              await preferences.setString('photoUrl', user.photoURL ?? '');
+              await preferences.setString(
+                'id',
+                user.uid,
+              );
 
               if (context.mounted && firebaseUser.user != null) {
                 Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
