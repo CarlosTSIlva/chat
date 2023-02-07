@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:chat/pages/chat/chat.dart';
 
 class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
+  final String id;
+  const Dashboard({super.key, required this.id});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,10 @@ class Dashboard extends StatelessWidget {
       ),
       body: SizedBox(
         child: StreamBuilder(
-          stream: FirebaseFirestore.instance.collection('users').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .where("id", isNotEqualTo: id)
+              .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center(
@@ -48,9 +53,12 @@ class Dashboard extends StatelessWidget {
                     Card(
                       child: InkWell(
                         onTap: () {
-                          final id = snapshot.data?.docs[index].get('id');
-
-                          print(id);
+                          final uid = snapshot.data?.docs[index].get('id');
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.chat,
+                            arguments: ChartArgs(peerId: uid, currentId: id),
+                          );
                         },
                         child: ListTile(
                           leading: Image(

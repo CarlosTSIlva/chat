@@ -80,7 +80,13 @@ class LoginState extends State<Login> {
               }
 
               if (context.mounted && firebaseUser.user != null) {
-                Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+                Future.delayed(const Duration(milliseconds: 800), () {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    AppRoutes.dashboard,
+                    arguments: user.uid,
+                  );
+                });
               }
 
               return;

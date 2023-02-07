@@ -60,7 +60,6 @@ class _SettingsState extends State<Settings> {
   }
 
   Future uploadFile() async {
-    String fileName = id;
     if (imageFile == null) {
       Fluttertoast.showToast(msg: "No Image Selected");
       return;
@@ -114,8 +113,7 @@ class _SettingsState extends State<Settings> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: Container(
-          child: Column(
+      body: Column(
         children: [
           Center(
               child: InkWell(
@@ -149,7 +147,7 @@ class _SettingsState extends State<Settings> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }
