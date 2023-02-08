@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ChartArgs {
   final String peerId;
@@ -24,6 +29,8 @@ class _ChatState extends State<Chat> {
   ScrollController controllerScroll = ScrollController();
   String groupChatId = '';
 
+  File? imageFile;
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +53,6 @@ class _ChatState extends State<Chat> {
               .doc(groupChatId)
               .collection(groupChatId)
               .orderBy('timestamp', descending: true)
-              // .limit(_limit)
               .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
@@ -59,6 +65,7 @@ class _ChatState extends State<Chat> {
                 child: ListView.builder(
                   padding: const EdgeInsets.all(10.0),
                   itemBuilder: (context, index) => Message(
+                      typeMessage: snapshot.data!.docs[index].get("type"),
                       text: snapshot.data!.docs[index].get("content"),
                       type: widget.args.currentId ==
                               snapshot.data!.docs[index].get("idFrom")
@@ -74,7 +81,7 @@ class _ChatState extends State<Chat> {
         ),
         bottomSheet: SafeArea(
           child: Container(
-            height: 55,
+            height: imageFile != null ? 180 : 55,
             color: Colors.white70,
             child: Column(
               children: [
@@ -85,19 +92,104 @@ class _ChatState extends State<Chat> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      // chat input and button to send message
+                      IconButton(
+                        icon: const Icon(Icons.attach_file),
+                        onPressed: () async {
+                          final ImagePicker picker = ImagePicker();
+                          final XFile? pickedFile = await picker.pickImage(
+                              source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            setState(() {
+                              imageFile = File(pickedFile.path);
+                            });
+                          }
+                        },
+                      ),
                       Expanded(
-                        child: TextField(
-                          controller: controllerText,
-                          decoration: const InputDecoration(
-                            hintText: 'Type a message',
-                          ),
-                        ),
+                        child: imageFile != null
+                            ? Stack(
+                                children: [
+                                  Image.file(
+                                    imageFile!,
+                                    height: 160,
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: Colors.black, width: 2),
+                                      ),
+                                      child: IconButton(
+                                          color: Colors.red,
+                                          onPressed: () {
+                                            setState(() {
+                                              imageFile = null;
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.close,
+                                          )),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : TextField(
+                                controller: controllerText,
+                                decoration: const InputDecoration(
+                                  hintText: 'Type a message',
+                                ),
+                              ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.send),
                         onPressed: () {
-                          setState(() {});
+                          if (imageFile != null) {
+                            Reference reference = FirebaseStorage.instance
+                                .ref()
+                                .child('images/imageName');
+                            UploadTask uploadTask =
+                                reference.putFile(imageFile!);
+
+                            uploadTask.then((storageTaskSnapshot) {
+                              storageTaskSnapshot.ref.getDownloadURL().then(
+                                  (downloadUrl) {
+                                var documentReference = FirebaseFirestore
+                                    .instance
+                                    .collection('messages')
+                                    .doc(groupChatId)
+                                    .collection(groupChatId)
+                                    .doc(DateTime.now()
+                                        .millisecondsSinceEpoch
+                                        .toString());
+                                FirebaseFirestore.instance
+                                    .runTransaction((transaction) async {
+                                  transaction.set(
+                                    documentReference,
+                                    {
+                                      'idFrom': widget.args.currentId,
+                                      'idTo': widget.args.peerId,
+                                      'timestamp': DateTime.now()
+                                          .millisecondsSinceEpoch
+                                          .toString(),
+                                      'content': downloadUrl,
+                                      'type': 1
+                                    },
+                                  );
+                                });
+                                setState(() {
+                                  imageFile = null;
+                                });
+                              }, onError: (err) {
+                                setState(() {
+                                  imageFile = null;
+                                });
+                              });
+                            });
+                            return;
+                          }
                           var documentReference = FirebaseFirestore.instance
                               .collection('messages')
                               .doc(groupChatId)
@@ -121,12 +213,12 @@ class _ChatState extends State<Chat> {
                               },
                             );
                           });
-                          controllerScroll.animateTo(0.0,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOut);
+                          controllerScroll.animateTo(
+                            0.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
                           controllerText.clear();
-
-                          // listScrollController.animateTo(0.0, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
                         },
                       ),
                     ],
@@ -142,9 +234,11 @@ class _ChatState extends State<Chat> {
 class Message extends StatelessWidget {
   final MessageType type;
   final String text;
+  final int typeMessage;
   const Message({
     super.key,
     this.type = MessageType.sent,
+    this.typeMessage = 0,
     required this.text,
   });
 
@@ -153,6 +247,7 @@ class Message extends StatelessWidget {
     return Container(
       alignment: type.alignment,
       padding: const EdgeInsets.all(10),
+      // se for type 1 mostra a imagem
       child: Container(
         width: 200,
         padding: const EdgeInsets.all(10),
@@ -160,9 +255,17 @@ class Message extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           color: type.color,
         ),
-        child: SizedBox(
-          child: Text(text),
-        ),
+        child: typeMessage == 1
+            ? CachedNetworkImage(
+                imageUrl: text,
+                progressIndicatorBuilder: (context, url, downloadProgress) =>
+                    LinearProgressIndicator(
+                        value: downloadProgress.progress ?? 0),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              )
+            : SizedBox(
+                child: Text(text),
+              ),
       ),
     );
   }
