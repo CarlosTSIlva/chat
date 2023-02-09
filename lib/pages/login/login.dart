@@ -17,7 +17,6 @@ class LoginState extends State<Login> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: <Widget>[
-        const Text('You are not currently signed in.'),
         ElevatedButton(
           onPressed: () async {
             try {
@@ -80,13 +79,11 @@ class LoginState extends State<Login> {
               }
 
               if (context.mounted && firebaseUser.user != null) {
-                Future.delayed(const Duration(milliseconds: 800), () {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRoutes.dashboard,
-                    arguments: user.uid,
-                  );
-                });
+                Navigator.pushReplacementNamed(
+                  context,
+                  AppRoutes.dashboard,
+                  arguments: user.uid,
+                );
               }
 
               return;
@@ -94,7 +91,7 @@ class LoginState extends State<Login> {
               print(error);
             }
           },
-          child: const Text('SIGN IN'),
+          child: const Text('SIGN IN WITH GOOGLE'),
         ),
       ],
     );
@@ -104,7 +101,7 @@ class LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Google Sign In'),
+          title: const Text('Login'),
         ),
         body: ConstrainedBox(
           constraints: const BoxConstraints.expand(),

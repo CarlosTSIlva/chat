@@ -7,7 +7,7 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String chat = '/chat';
 
-  static Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
+  static Route<dynamic>? onGenerateRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
       case login:
         return MaterialPageRoute(builder: (_) => const Login());
@@ -26,9 +26,7 @@ class AppRoutes {
             builder: (_) => Chat(
                   args: routeSettings.arguments as ChartArgs,
                 ));
-
-      default:
-        return MaterialPageRoute(builder: (_) => const Login());
     }
+    return null;
   }
 }

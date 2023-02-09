@@ -13,7 +13,8 @@ class Dashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('Dashboard'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -54,10 +55,16 @@ class Dashboard extends StatelessWidget {
                       child: InkWell(
                         onTap: () {
                           final uid = snapshot.data?.docs[index].get('id');
+                          final nickname =
+                              snapshot.data?.docs[index].get('nickname');
                           Navigator.pushNamed(
                             context,
                             AppRoutes.chat,
-                            arguments: ChartArgs(peerId: uid, currentId: id),
+                            arguments: ChartArgs(
+                              peerId: uid,
+                              currentId: id,
+                              name: nickname,
+                            ),
                           );
                         },
                         child: ListTile(

@@ -60,13 +60,29 @@ class _SettingsState extends State<Settings> {
   }
 
   Future uploadFile() async {
+    final prefs = await SharedPreferences.getInstance();
+
     if (imageFile == null) {
-      Fluttertoast.showToast(msg: "No Image Selected");
+      FirebaseFirestore.instance.collection('users').doc(id).update({
+        'nickname': _controllers[0].text,
+        'aboutMe': _controllers[1].text,
+      }).then((data) async {
+        await prefs.setString('aboutMe', _controllers[1].text);
+        await prefs.setString('nickname', _controllers[0].text);
+        setState(() {
+          isLoading = false;
+        });
+        Fluttertoast.showToast(msg: "Update success");
+      }).catchError((err) {
+        setState(() {
+          isLoading = false;
+        });
+        Fluttertoast.showToast(msg: err.toString());
+      });
       return;
     }
     Reference reference =
         FirebaseStorage.instance.ref().child('images/imageName');
-    final prefs = await SharedPreferences.getInstance();
 
     UploadTask uploadTask = reference.putFile(imageFile!);
     TaskSnapshot storageTaskSnapshot;
@@ -74,7 +90,6 @@ class _SettingsState extends State<Settings> {
       storageTaskSnapshot = value;
       storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
         photoUrl = downloadUrl;
-        print("Photo Url: $photoUrl");
         FirebaseFirestore.instance.collection('users').doc(id).update({
           'nickname': _controllers[0].text,
           'aboutMe': _controllers[1].text,

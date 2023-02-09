@@ -9,7 +9,9 @@ import 'package:image_picker/image_picker.dart';
 class ChartArgs {
   final String peerId;
   final String currentId;
-  ChartArgs({required this.peerId, required this.currentId});
+  final String name;
+  ChartArgs(
+      {required this.peerId, required this.currentId, required this.name});
 }
 
 class Chat extends StatefulWidget {
@@ -28,6 +30,7 @@ class _ChatState extends State<Chat> {
   TextEditingController controllerText = TextEditingController();
   ScrollController controllerScroll = ScrollController();
   String groupChatId = '';
+  bool isLoading = false;
 
   File? imageFile;
 
@@ -45,7 +48,7 @@ class _ChatState extends State<Chat> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Config'),
+          title: Text(widget.args.name),
         ),
         body: StreamBuilder(
           stream: FirebaseFirestore.instance
@@ -61,7 +64,8 @@ class _ChatState extends State<Chat> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.red)));
             } else {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 48.0),
+                padding:
+                    EdgeInsets.only(bottom: imageFile != null ? 200 : 48.0),
                 child: ListView.builder(
                   padding: const EdgeInsets.all(10.0),
                   itemBuilder: (context, index) => Message(
@@ -113,27 +117,28 @@ class _ChatState extends State<Chat> {
                                     imageFile!,
                                     height: 160,
                                   ),
-                                  Positioned(
-                                    right: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: Colors.black, width: 2),
+                                  if (!isLoading)
+                                    Positioned(
+                                      right: 0,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: Colors.black, width: 2),
+                                        ),
+                                        child: IconButton(
+                                            color: Colors.red,
+                                            onPressed: () {
+                                              setState(() {
+                                                imageFile = null;
+                                              });
+                                            },
+                                            icon: const Icon(
+                                              Icons.close,
+                                            )),
                                       ),
-                                      child: IconButton(
-                                          color: Colors.red,
-                                          onPressed: () {
-                                            setState(() {
-                                              imageFile = null;
-                                            });
-                                          },
-                                          icon: const Icon(
-                                            Icons.close,
-                                          )),
                                     ),
-                                  ),
                                 ],
                               )
                             : TextField(
@@ -144,9 +149,17 @@ class _ChatState extends State<Chat> {
                               ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.send),
+                        icon: isLoading
+                            ? const CircularProgressIndicator()
+                            : const Icon(Icons.send),
                         onPressed: () {
+                          if (isLoading) {
+                            return;
+                          }
                           if (imageFile != null) {
+                            setState(() {
+                              isLoading = true;
+                            });
                             Reference reference = FirebaseStorage.instance
                                 .ref()
                                 .child('images/imageName');
@@ -154,8 +167,9 @@ class _ChatState extends State<Chat> {
                                 reference.putFile(imageFile!);
 
                             uploadTask.then((storageTaskSnapshot) {
-                              storageTaskSnapshot.ref.getDownloadURL().then(
-                                  (downloadUrl) {
+                              storageTaskSnapshot.ref
+                                  .getDownloadURL()
+                                  .then((downloadUrl) {
                                 var documentReference = FirebaseFirestore
                                     .instance
                                     .collection('messages')
@@ -181,15 +195,19 @@ class _ChatState extends State<Chat> {
                                 });
                                 setState(() {
                                   imageFile = null;
-                                });
-                              }, onError: (err) {
-                                setState(() {
-                                  imageFile = null;
+                                  isLoading = false;
                                 });
                               });
+                            }, onError: (err) {
+                              setState(() {
+                                imageFile = null;
+                                isLoading = false;
+                              });
                             });
+
                             return;
                           }
+
                           var documentReference = FirebaseFirestore.instance
                               .collection('messages')
                               .doc(groupChatId)
@@ -247,7 +265,6 @@ class Message extends StatelessWidget {
     return Container(
       alignment: type.alignment,
       padding: const EdgeInsets.all(10),
-      // se for type 1 mostra a imagem
       child: Container(
         width: 200,
         padding: const EdgeInsets.all(10),
